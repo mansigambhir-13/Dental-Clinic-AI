@@ -54,19 +54,33 @@ def display_sidebar():
         st.title("🦷 Clinic Info")
         
         if st.session_state.chatbot:
-            clinic_info = st.session_state.chatbot.get_clinic_info()
-            
-            st.info(f"""
-            **{clinic_info['name']}**
-            
-            📍 {clinic_info['address']}
-            📞 {clinic_info['phone']}
-            """)
-            
-            st.subheader("📊 System Status")
-            st.write(f"Available Appointments: {clinic_info['available_slots']}")
-            st.write(f"FAQ Entries: {clinic_info['faqs_available']}")
-            st.write(f"Knowledge Chunks: {clinic_info['knowledge_chunks']}")
+            try:
+                clinic_info = st.session_state.chatbot.get_clinic_info()
+                
+                st.info(f"""
+                **{clinic_info.get('name', 'Dental Clinic')}**
+                
+                📍 {clinic_info.get('address', 'Address not available')}
+                📞 {clinic_info.get('phone', 'Phone not available')}
+                """)
+                
+                st.subheader("📊 System Status")
+                # Safe dictionary access using .get() method
+                st.write(f"Available Appointments: {clinic_info.get('available_slots', 0)}")
+                st.write(f"FAQ Entries: {clinic_info.get('faqs_available', 0)}")
+                st.write(f"Knowledge Chunks: {clinic_info.get('knowledge_chunks', 0)}")
+                
+            except Exception as e:
+                st.warning(f"Could not load clinic info: {str(e)}")
+                # Fallback display
+                st.info(f"""
+                **{Config.CLINIC_NAME}**
+                
+                📍 {Config.CLINIC_ADDRESS}
+                📞 {Config.CLINIC_PHONE}
+                """)
+                st.subheader("📊 System Status")
+                st.write("System initializing...")
         
         st.subheader("💡 Try asking:")
         example_questions = [
@@ -207,14 +221,22 @@ def main():
         # Get bot response
         with st.spinner("Thinking..."):
             try:
-                response_data = st.session_state.chatbot.process_message(user_input)
-                bot_response = response_data['response']
-                intent = response_data['intent']
+                # Handle different response formats for backwards compatibility
+                if hasattr(st.session_state.chatbot, 'process_message'):
+                    response_data = st.session_state.chatbot.process_message(user_input)
+                    bot_response = response_data['response']
+                    intent = response_data.get('intent', 'general')
+                else:
+                    # Fallback to simple query processing
+                    bot_response = st.session_state.chatbot.process_query(user_input)
+                    intent = 'general'
+                    response_data = {'response': bot_response, 'intent': intent}
                 
-                # Add to conversation history
-                st.session_state.chatbot.add_to_conversation_history(
-                    user_input, bot_response, intent
-                )
+                # Add to conversation history if method exists
+                if hasattr(st.session_state.chatbot, 'add_to_conversation_history'):
+                    st.session_state.chatbot.add_to_conversation_history(
+                        user_input, bot_response, intent
+                    )
                 
                 # Display bot response
                 st.session_state.messages.append({"role": "assistant", "content": bot_response})
