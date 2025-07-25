@@ -173,3 +173,12 @@ class DentalAssistantBot:
         
         How can I assist you today?
         """
+    
+    def get_clinic_info(self) -> Dict[str, str]:
+        """Get clinic information for display"""
+        return {
+            'name': Config.CLINIC_NAME,
+            'address': Config.CLINIC_ADDRESS,
+            'phone': Config.CLINIC_PHONE,
+            'description': Config.APP_DESCRIPTION
+        }
