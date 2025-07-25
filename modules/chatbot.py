@@ -174,11 +174,17 @@ class DentalAssistantBot:
         How can I assist you today?
         """
     
-    def get_clinic_info(self) -> Dict[str, str]:
+    def get_clinic_info(self) -> Dict:
         """Get clinic information for display"""
+        # Get available appointments count
+        available_slots = 0
+        if self.appointments and 'available_slots' in self.appointments:
+            available_slots = len(self.appointments['available_slots'])
+        
         return {
             'name': Config.CLINIC_NAME,
             'address': Config.CLINIC_ADDRESS,
             'phone': Config.CLINIC_PHONE,
-            'description': Config.APP_DESCRIPTION
+            'description': Config.APP_DESCRIPTION,
+            'available_slots': available_slots
         }
