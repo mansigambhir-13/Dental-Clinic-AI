@@ -1,0 +1,86 @@
+
+{
+  "available_slots": [
+    {
+      "id": 1,
+      "date": "2024-01-29",
+      "time": "9:00 AM",
+      "duration": "30 min",
+      "available": true,
+      "type": "Cleaning"
+    },
+    {
+      "id": 2,
+      "date": "2024-01-29",
+      "time": "10:30 AM",
+      "duration": "60 min",
+      "available": true,
+      "type": "Consultation"
+    },
+    {
+      "id": 3,
+      "date": "2024-01-29",
+      "time": "2:00 PM",
+      "duration": "30 min",
+      "available": true,
+      "type": "Cleaning"
+    },
+    {
+      "id": 4,
+      "date": "2024-01-30",
+      "time": "9:00 AM",
+      "duration": "30 min",
+      "available": true,
+      "type": "Cleaning"
+    },
+    {
+      "id": 5,
+      "date": "2024-01-30",
+      "time": "11:00 AM",
+      "duration": "90 min",
+      "available": true,
+      "type": "Root Canal"
+    },
+    {
+      "id": 6,
+      "date": "2024-01-30",
+      "time": "3:30 PM",
+      "duration": "45 min",
+      "available": true,
+      "type": "Filling"
+    },
+    {
+      "id": 7,
+      "date": "2024-01-31",
+      "time": "8:30 AM",
+      "duration": "30 min",
+      "available": true,
+      "type": "Cleaning"
+    },
+    {
+      "id": 8,
+      "date": "2024-01-31",
+      "time": "1:00 PM",
+      "duration": "60 min",
+      "available": true,
+      "type": "Crown Fitting"
+    },
+    {
+      "id": 9,
+      "date": "2024-02-01",
+      "time": "10:00 AM",
+      "duration": "30 min",
+      "available": true,
+      "type": "Checkup"
+    },
+    {
+      "id": 10,
+      "date": "2024-02-01",
+      "time": "4:00 PM",
+      "duration": "60 min",
+      "available": true,
+      "type": "Whitening"
+    }
+  ],
+  "booked_appointments": []
+}

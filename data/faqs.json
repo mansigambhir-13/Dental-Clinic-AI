@@ -1,0 +1,45 @@
+
+{
+  "faqs": [
+    {
+      "question": "What are your office hours?",
+      "answer": "We're open Monday-Friday 8:00 AM - 6:00 PM, Saturday 9:00 AM - 3:00 PM. We're closed on Sundays.",
+      "keywords": ["hours", "open", "time", "schedule"]
+    },
+    {
+      "question": "Do you accept insurance?",
+      "answer": "Yes! We accept most major dental insurance plans including Delta Dental, Cigna, Aetna, MetLife, and Guardian. Please call us to verify your specific plan.",
+      "keywords": ["insurance", "coverage", "payment", "accept"]
+    },
+    {
+      "question": "Where are you located?",
+      "answer": "We're located at 123 Health Street in the Medical District. There's free parking available in our lot.",
+      "keywords": ["location", "address", "where", "parking"]
+    },
+    {
+      "question": "What services do you offer?",
+      "answer": "We offer comprehensive dental care including cleanings, fillings, crowns, root canals, teeth whitening, orthodontics, and emergency dental care.",
+      "keywords": ["services", "treatment", "procedures", "offer"]
+    },
+    {
+      "question": "How much does a cleaning cost?",
+      "answer": "A routine cleaning typically costs $100-150 without insurance. With insurance, your copay is usually $20-50 depending on your plan.",
+      "keywords": ["cost", "price", "cleaning", "money"]
+    },
+    {
+      "question": "Do you handle dental emergencies?",
+      "answer": "Yes! We provide emergency dental care during business hours. For after-hours emergencies, please call our emergency line at (555) 123-HELP.",
+      "keywords": ["emergency", "urgent", "pain", "after hours"]
+    },
+    {
+      "question": "How often should I visit the dentist?",
+      "answer": "We recommend visiting every 6 months for routine cleanings and checkups. Some patients with gum disease may need more frequent visits.",
+      "keywords": ["often", "frequency", "visit", "checkup"]
+    },
+    {
+      "question": "Do you offer teeth whitening?",
+      "answer": "Yes! We offer both in-office professional whitening (1 hour) and take-home whitening kits. In-office treatment gives faster, more dramatic results.",
+      "keywords": ["whitening", "bleaching", "white teeth", "cosmetic"]
+    }
+  ]
+}
