@@ -11,10 +11,15 @@ A comprehensive AI-powered chatbot for dental clinics that handles FAQs, appoint
 - **🎨 User-Friendly Interface**: Clean Streamlit web interface
 - **📊 Real-Time Updates**: Live appointment availability
 
-## 🚀 Quick Start
+## Live Link of the Web App
+
+https://dental-clinic-ai-hzb62y2ufk9scwgwfqr9ai.streamlit.app/
 
 ## Loom Video 
 https://www.loom.com/share/d57da945afa649dd85d70471c89985bc
+
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
