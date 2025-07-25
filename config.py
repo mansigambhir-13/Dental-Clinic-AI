@@ -30,12 +30,11 @@ class Config:
     KNOWLEDGE_BASE_FILE = "data/knowledge_base.txt"
     APPOINTMENTS_FILE = "data/appointments.json"
     
-    # RAG Configuration
-    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-    MAX_CHUNKS = 3
-    CHUNK_SIZE = 200
-    
-    # Appointment Configuration
+    # Clinic Configuration
     CLINIC_NAME = "Bright Smile Dental Clinic"
     CLINIC_ADDRESS = "123 Health Street, Medical District"
     CLINIC_PHONE = "(555) 123-DENT"
+    
+    # Simple text search instead of embedding-based RAG
+    MAX_CHUNKS = 3
+    CHUNK_SIZE = 200
