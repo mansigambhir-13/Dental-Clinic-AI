@@ -1,270 +1,175 @@
-import google.generativeai as genai
 import json
+import google.generativeai as genai
 from typing import Dict, List, Optional
-from utils.helpers import load_json_file, find_keywords_in_text
-from modules.intent_classifier import IntentClassifier
-from modules.booking_system import BookingSystem
-from modules.rag_system import RAGSystem
+from .rag_system import RAGSystem
 from config import Config
 
 class DentalAssistantBot:
     def __init__(self):
-        # Initialize Gemini
+        # Configure Gemini
         if Config.GEMINI_API_KEY:
             genai.configure(api_key=Config.GEMINI_API_KEY)
             self.model = genai.GenerativeModel(Config.GEMINI_MODEL)
         else:
             self.model = None
         
-        # Initialize components
-        self.intent_classifier = IntentClassifier()
-        self.booking_system = BookingSystem()
-        self.rag_system = RAGSystem()
-        
-        # Load FAQ data
-        self.faqs_data = load_json_file(Config.FAQS_FILE)
-        self.faqs = self.faqs_data.get('faqs', [])
-        
-        # Conversation context
-        self.conversation_history = []
-        self.user_context = {}
-
-    def process_message(self, user_input: str) -> Dict:
-        """
-        Main method to process user input and return appropriate response.
-        """
-        if not user_input.strip():
-            return {
-                'response': "I didn't receive any message. How can I help you today?",
-                'intent': 'general',
-                'additional_data': None
-            }
-
-        # Classify intent
-        intent = self.intent_classifier.classify_intent(user_input)
-        
-        # Route to appropriate handler
-        if intent == 'faq':
-            return self._handle_faq(user_input)
-        elif intent == 'booking':
-            return self._handle_booking(user_input)
-        elif intent == 'knowledge':
-            return self._handle_knowledge_query(user_input)
-        else:
-            return self._handle_general_query(user_input)
-
-    def _handle_faq(self, user_input: str) -> Dict:
-        """Handle FAQ-related queries."""
-        best_match = None
-        best_score = 0
-        
-        for faq in self.faqs:
-            # Check keywords in question
-            keywords = faq.get('keywords', [])
-            score = find_keywords_in_text(user_input, keywords)
-            
-            # Also check similarity to the question itself
-            question_words = faq['question'].lower().split()
-            question_score = find_keywords_in_text(user_input, question_words)
-            
-            total_score = score + question_score * 0.5
-            
-            if total_score > best_score:
-                best_score = total_score
-                best_match = faq
-
-        if best_match and best_score > 0:
-            response = f"**{best_match['question']}**\n\n{best_match['answer']}"
-            
-            return {
-                'response': response,
-                'intent': 'faq',
-                'additional_data': {
-                    'matched_faq': best_match,
-                    'confidence': min(best_score / 3, 1.0)
-                }
-            }
-        else:
-            # If no FAQ match, try knowledge base
-            return self._handle_knowledge_query(user_input)
-
-    def _handle_booking(self, user_input: str) -> Dict:
-        """Handle appointment booking queries."""
-        # Check if user is asking for available slots
-        if any(word in user_input.lower() for word in ['available', 'slots', 'times', 'when']):
-            available_slots = self.booking_system.get_available_slots(5)
-            
-            if available_slots:
-                response = "Here are our available appointment slots:\n\n"
-                for i, slot in enumerate(available_slots, 1):
-                    response += f"**{i}. {self.booking_system.format_slot_display(slot)}**\n\n"
-                
-                response += "\n💡 To book an appointment, please tell me:\n"
-                response += "- Your preferred slot ID\n"
-                response += "- Your name and phone number\n"
-                response += "- Type of appointment needed"
-                
-                return {
-                    'response': response,
-                    'intent': 'booking',
-                    'additional_data': {
-                        'available_slots': available_slots,
-                        'action': 'show_slots'
-                    }
-                }
-            else:
-                return {
-                    'response': "I'm sorry, but there are no available appointment slots at the moment. Please call us at " + Config.CLINIC_PHONE + " for assistance.",
-                    'intent': 'booking',
-                    'additional_data': None
-                }
-        
-        # Generic booking response
-        response = f"""I'd be happy to help you book an appointment! 
-
-Here's what I can help you with:
-- 📅 Show available appointment slots
-- 🕐 Find specific times or dates
-- 🦷 Schedule different types of appointments
-
-To get started, you can say:
-- "Show me available appointments"
-- "I need a cleaning appointment"
-- "What times are available next week?"
-
-Or call us directly at {Config.CLINIC_PHONE}."""
-
-        return {
-            'response': response,
-            'intent': 'booking',
-            'additional_data': {
-                'action': 'booking_info'
-            }
-        }
-
-    def _handle_knowledge_query(self, user_input: str) -> Dict:
-        """Handle knowledge-based queries using RAG."""
-        rag_result = self.rag_system.answer_question_with_context(user_input)
-        
-        if rag_result['has_context']:
-            # Use Gemini to generate response with context
-            try:
-                response = self._generate_ai_response(user_input, rag_result['context'])
-                return {
-                    'response': response,
-                    'intent': 'knowledge',
-                    'additional_data': {
-                        'context_used': True,
-                        'relevant_chunks': len(rag_result['relevant_chunks'])
-                    }
-                }
-            except Exception as e:
-                print(f"Error generating AI response: {e}")
-                # Fallback to context only
-                return {
-                    'response': f"Based on our dental knowledge:\n\n{rag_result['context'][:500]}...",
-                    'intent': 'knowledge',
-                    'additional_data': {
-                        'context_used': True,
-                        'ai_error': str(e)
-                    }
-                }
-        else:
-            return self._handle_general_query(user_input)
-
-    def _handle_general_query(self, user_input: str) -> Dict:
-        """Handle general queries with AI assistance."""
+        # Initialize RAG system with proper knowledge base file path
         try:
-            system_prompt = f"""You are a helpful dental clinic assistant for {Config.CLINIC_NAME}. 
-            Provide helpful, professional, and friendly responses about dental care and services. 
-            If you don't know something specific about our clinic, suggest they call {Config.CLINIC_PHONE} for more information.
-            Keep responses concise but informative."""
-            
-            response = self._generate_ai_response(user_input, "", system_prompt)
-            
-            return {
-                'response': response,
-                'intent': 'general',
-                'additional_data': {
-                    'ai_generated': True
-                }
-            }
-        except Exception as e:
-            print(f"Error with AI response: {e}")
-            return {
-                'response': f"I'm here to help with your dental questions! You can ask me about:\n\n• Our services and procedures\n• Appointment booking\n• General dental care\n• Office hours and location\n\nWhat would you like to know?",
-                'intent': 'general',
-                'additional_data': {
-                    'ai_error': str(e)
-                }
-            }
-
-    def _generate_ai_response(self, user_input: str, context: str = "", system_prompt: str = "") -> str:
-        """Generate response using Gemini API."""
-        if not self.model:
-            raise Exception("Gemini API key not configured")
-
-        # Construct the prompt
-        prompt_parts = []
-        
-        # Add system prompt
-        if system_prompt:
-            prompt_parts.append(f"Instructions: {system_prompt}")
-        else:
-            prompt_parts.append(f"You are a helpful dental clinic assistant for {Config.CLINIC_NAME}. Provide professional and friendly dental advice.")
-        
-        # Add context if available
-        if context:
-            prompt_parts.append(f"Context from our knowledge base:\n{context}")
-        
-        # Add user question
-        prompt_parts.append(f"User question: {user_input}")
-        prompt_parts.append("Please provide a helpful response:")
-        
-        full_prompt = "\n\n".join(prompt_parts)
-
-        try:
-            response = self.model.generate_content(
-                full_prompt,
-                generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=300,
-                    temperature=0.7,
-                )
+            self.rag_system = RAGSystem(
+                knowledge_base_file=Config.KNOWLEDGE_BASE_FILE,
+                embedding_model=getattr(Config, 'EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
             )
+        except Exception as e:
+            print(f"Failed to initialize RAG system: {e}")
+            self.rag_system = None
+        
+        # Load FAQs and appointments
+        self.faqs = self._load_json_file(Config.FAQS_FILE)
+        self.appointments = self._load_json_file(Config.APPOINTMENTS_FILE)
+        
+        # System prompt
+        self.system_prompt = f"""
+        You are a helpful dental clinic assistant for {Config.CLINIC_NAME}.
+        
+        Clinic Information:
+        - Name: {Config.CLINIC_NAME}
+        - Address: {Config.CLINIC_ADDRESS}
+        - Phone: {Config.CLINIC_PHONE}
+        
+        Your role:
+        1. Answer frequently asked questions about dental procedures and clinic policies
+        2. Help with appointment scheduling and availability
+        3. Provide general dental health information
+        4. Be friendly, professional, and empathetic
+        
+        Always prioritize patient safety and recommend professional consultation for serious concerns.
+        """
+    
+    def _load_json_file(self, file_path: str) -> Dict:
+        """Load JSON data from file with error handling"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"File not found: {file_path}")
+            return {}
+        except json.JSONDecodeError:
+            print(f"Invalid JSON in file: {file_path}")
+            return {}
+    
+    def _search_faqs(self, query: str) -> Optional[str]:
+        """Search for relevant FAQ"""
+        if not self.faqs or 'faqs' not in self.faqs:
+            return None
+        
+        query_lower = query.lower()
+        
+        for faq in self.faqs['faqs']:
+            question = faq.get('question', '').lower()
+            keywords = faq.get('keywords', [])
             
-            return response.text.strip()
+            # Check if query matches question or keywords
+            if any(keyword.lower() in query_lower for keyword in keywords):
+                return faq.get('answer', '')
+            
+            if any(word in question for word in query_lower.split()):
+                return faq.get('answer', '')
+        
+        return None
+    
+    def _search_appointments(self, query: str) -> Optional[str]:
+        """Search for appointment information"""
+        if not self.appointments:
+            return None
+        
+        query_lower = query.lower()
+        appointment_keywords = ['appointment', 'booking', 'schedule', 'available', 'time', 'slot']
+        
+        if any(keyword in query_lower for keyword in appointment_keywords):
+            # Return available appointments
+            if 'available_slots' in self.appointments:
+                slots = self.appointments['available_slots']
+                if slots:
+                    response = "Here are our available appointment slots:\n\n"
+                    for slot in slots[:5]:  # Show first 5 slots
+                        response += f"📅 {slot.get('date', 'N/A')} at {slot.get('time', 'N/A')}\n"
+                    response += f"\nTo book an appointment, please call us at {Config.CLINIC_PHONE}"
+                    return response
+        
+        return None
+    
+    def _get_rag_context(self, query: str) -> Optional[str]:
+        """Get relevant context from knowledge base"""
+        if not self.rag_system:
+            return None
+        
+        try:
+            context = self.rag_system.get_context(query, max_chunks=3)
+            return context if context and context != "No relevant information found in knowledge base." else None
+        except Exception as e:
+            print(f"RAG search error: {e}")
+            return None
+    
+    def _generate_ai_response(self, query: str, context: str = "") -> str:
+        """Generate AI response using Gemini"""
+        if not self.model:
+            return "I'm sorry, but I'm unable to process your request right now. Please contact our clinic directly for assistance."
+        
+        try:
+            # Combine system prompt, context, and query
+            full_prompt = f"""
+            {self.system_prompt}
+            
+            Context from knowledge base:
+            {context}
+            
+            Patient question: {query}
+            
+            Please provide a helpful, accurate response based on the context and your knowledge of dental care.
+            """
+            
+            response = self.model.generate_content(full_prompt)
+            return response.text
             
         except Exception as e:
-            raise Exception(f"Gemini API error: {str(e)}")
-
-    def get_clinic_info(self) -> Dict:
-        """Get basic clinic information."""
-        return {
-            'name': Config.CLINIC_NAME,
-            'address': Config.CLINIC_ADDRESS,
-            'phone': Config.CLINIC_PHONE,
-            'available_slots': len(self.booking_system.get_available_slots()),
-            'knowledge_chunks': len(self.rag_system.knowledge_chunks),
-            'faqs_available': len(self.faqs)
-        }
-
-    def add_to_conversation_history(self, user_input: str, bot_response: str, intent: str):
-        """Add exchange to conversation history."""
-        self.conversation_history.append({
-            'user_input': user_input,
-            'bot_response': bot_response,
-            'intent': intent,
-            'timestamp': Config.get_current_timestamp() if hasattr(Config, 'get_current_timestamp') else 'N/A'
-        })
+            print(f"AI generation error: {e}")
+            return "I apologize, but I'm having trouble generating a response right now. Please try again or contact our clinic directly."
+    
+    def process_query(self, query: str) -> str:
+        """Process user query and return appropriate response"""
+        if not query.strip():
+            return "Hello! How can I help you today? You can ask about appointments, dental procedures, or general oral health questions."
         
-        # Keep only last 10 exchanges
-        if len(self.conversation_history) > 10:
-            self.conversation_history = self.conversation_history[-10:]
-
-    def set_user_context(self, key: str, value: str):
-        """Set user context information."""
-        self.user_context[key] = value
-
-    def get_user_context(self, key: str) -> Optional[str]:
-        """Get user context information."""
-        return self.user_context.get(key)
+        # Step 1: Check FAQs
+        faq_response = self._search_faqs(query)
+        if faq_response:
+            return f"**FAQ:** {faq_response}"
+        
+        # Step 2: Check appointments
+        appointment_response = self._search_appointments(query)
+        if appointment_response:
+            return appointment_response
+        
+        # Step 3: Get context from knowledge base
+        rag_context = self._get_rag_context(query)
+        
+        # Step 4: Generate AI response
+        if rag_context:
+            return f"**Based on our knowledge base:**\n\n{self._generate_ai_response(query, rag_context)}"
+        else:
+            return self._generate_ai_response(query)
+    
+    def get_welcome_message(self) -> str:
+        """Get welcome message for the chatbot"""
+        return f"""
+        👋 Welcome to {Config.CLINIC_NAME}!
+        
+        I'm your AI dental assistant. I can help you with:
+        
+        🦷 **Dental procedure information**
+        📅 **Appointment scheduling**  
+        ❓ **Frequently asked questions**
+        💡 **General oral health advice**
+        
+        How can I assist you today?
+        """
