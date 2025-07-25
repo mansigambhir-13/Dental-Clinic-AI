@@ -13,6 +13,9 @@ A comprehensive AI-powered chatbot for dental clinics that handles FAQs, appoint
 
 ## 🚀 Quick Start
 
+## Loom Video 
+https://www.loom.com/share/d57da945afa649dd85d70471c89985bc
+
 ### Prerequisites
 
 - Python 3.8 or higher
