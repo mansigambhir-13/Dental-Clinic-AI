@@ -1,16 +1,24 @@
 import os
 from dotenv import load_dotenv
-import streamlit as st
 
 # Load environment variables
 load_dotenv()
 
 class Config:
     # Gemini Configuration - Works both locally and on Streamlit Cloud
-    GEMINI_API_KEY = (
-        st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, 'secrets') 
-        else os.getenv('GEMINI_API_KEY', '')
-    )
+    GEMINI_API_KEY = ""
+    
+    # Try to get API key from Streamlit secrets first, then from environment
+    try:
+        import streamlit as st
+        if hasattr(st, 'secrets') and "GEMINI_API_KEY" in st.secrets:
+            GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+        else:
+            GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+    except ImportError:
+        # If streamlit not available (local development), use .env
+        GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+    
     GEMINI_MODEL = "gemini-1.5-flash"
     
     # App Configuration
